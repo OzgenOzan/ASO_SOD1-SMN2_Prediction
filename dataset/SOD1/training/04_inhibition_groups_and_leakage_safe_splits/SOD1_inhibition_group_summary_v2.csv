@@ -1,0 +1,5 @@
+inhibition_group_4_equal_count,n_ASOs,min_inhibition,max_inhibition,mean_inhibition,median_inhibition
+G1_lowest_inhibition,257,0,16,8.26070038910506,9.0
+G2_low_mid_inhibition,256,16,31,23.796875,24.0
+G3_high_mid_inhibition,256,31,52,41.14453125,41.0
+G4_highest_inhibition,257,52,98,74.63813229571984,76.0

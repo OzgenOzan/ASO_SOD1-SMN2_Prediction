@@ -1,0 +1,22 @@
+15470 adet farklı ASO mevcut
+İnhibisyon yüzdesi olmayan kayıtlar silindi
+Aynı kayıtlar silindi (ISIS ve inhibisyon kolonu hariç aynı olanlar)
+Aynı ASO ya ait en yüksek ASO_volume(nM) olan kayıt alındı
+Experimental condition columns silindi
+
+---
+
+K-RAS: Primarily acts as a major oncogene. Mutations are heavily implicated in various cancers, most notably pancreatic, colorectal, and lung cancers.
+SNCA: Provides instructions for making the protein alpha-synuclein. Mutations or over-expression are the primary drivers of "synucleinopathies," most notably Parkinson's disease and Lewy body dementia.
+IRF5: Strongly linked to the immune system. Variants are heavily associated with autoimmune diseases, particularly Systemic Lupus Erythematosus (SLE) and Rheumatoid Arthritis.
+MALAT1: A long non-coding RNA (lncRNA) that is highly over-expressed in various tumors. It is closely associated with cancer metastasis (particularly in lung and breast cancers) and diabetic retinopathy.
+IRF4: A transcription factor gene associated with hematologic malignancies, primarily multiple myeloma, leukemias, and various lymphomas.
+HBV: This refers to the Hepatitis B Virus genome rather than a human gene. It is the direct cause of Hepatitis B and a leading global cause of hepatocellular carcinoma (liver cancer).
+Yap1: A key downstream regulator of the Hippo signaling pathway. Its dysregulation is linked to multiple cancers (especially liver and breast cancer) and tissue fibrosis.
+PKK: Generally refers to the KLKB1 gene (Prekallikrein). Deficiencies result in Fletcher trait (Prekallikrein deficiency), a rare and typically asymptomatic blood clotting anomaly. It is also investigated as a target in systemic inflammation and sepsis.
+HSD17B13: Highly relevant in Non-Alcoholic Fatty Liver Disease (NAFLD), now known as MASLD. Interestingly, loss-of-function mutations in this gene are actually protective and significantly reduce the risk of progressing to chronic liver disease and cirrhosis.
+HIF1A: A major regulator of cellular response to low oxygen. It is deeply implicated in solid tumor cancers (which rely on it to survive tumor hypoxia) and ischemic diseases like heart attacks and stroke.
+SNCA_LNA: This refers to a therapeutic approach rather than a bare gene. LNA (Locked Nucleic Acid) is an antisense drug technology designed to silence specific genes. An SNCA-LNA is actively researched for treating Parkinson's disease.
+ANGPTL2_LNA: Similarly, this is an LNA therapy designed to silence the ANGPTL2 gene. It is investigated as a treatment for chronic inflammatory diseases, cardiovascular disease, and cancer metastasis.
+Tau (MAPT): Provides instructions for making the tau protein. Its dysfunction results in "tauopathies," a class of neurodegenerative diseases that includes Alzheimer's disease, Frontotemporal dementia, and Progressive supranuclear palsy.
+SNHG14: A long non-coding RNA whose up-regulation is linked to various cancers (such as non-small cell lung cancer and hepatocellular carcinoma) as well as neuroinflammation following ischemic stroke.

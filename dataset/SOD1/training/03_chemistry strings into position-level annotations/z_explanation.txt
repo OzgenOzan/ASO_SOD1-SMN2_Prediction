@@ -1,0 +1,254 @@
+These four CSV files are different “views” of the same ASO dataset. They should be kept together because they serve different purposes in preprocessing, QC, and modeling.
+
+## `SOD1_process_v1.csv`
+
+This is the **main processed ASO-level dataset**.
+
+Each row represents **one ASO molecule / one original dataset entry**. This is the file you will usually use for tabular ML training.
+
+It contains the original columns, such as:
+
+```text
+ISIS
+Sequence
+Chemical_Pattern
+Smiles
+Inhibition(%)
+Linkage
+Linkage_Location
+```
+
+plus calculated validation and summary columns, such as:
+
+```text
+seq_length
+seq_length_recalc
+chem_pattern_length
+valid_sequence
+valid_chemical_pattern
+lengths_match
+n_linkages
+n_PS
+n_PO
+linkage_count_valid
+n_MOE
+n_cEt
+n_DNA
+frac_MOE
+frac_cEt
+frac_DNA
+frac_modified_sugar
+```
+
+Use this file for:
+
+```text
+ASO-level ML features
+train/test splitting
+inhibition-label modeling
+summary statistics
+checking whether each ASO passed validation
+```
+
+In short: **one row = one ASO**.
+
+---
+
+## `SOD1_position_level_annotations_v1.csv`
+
+This is the **nucleotide-position-level chemistry table**.
+
+Each row represents **one nucleotide position inside one ASO**.
+
+For example, if an ASO is 17 nucleotides long, it contributes 17 rows to this file.
+
+Typical columns are:
+
+```text
+row_id
+ISIS
+position_0based
+position_1based
+base
+chem_symbol
+sugar
+is_DNA_gap
+is_MOE
+is_cEt
+is_modified_sugar
+seq_length
+```
+
+Example interpretation:
+
+```text
+ISIS = 666867
+position_1based = 1
+base = A
+chem_symbol = M
+sugar = MOE
+```
+
+This means: nucleotide 1 of ASO 666867 is base `A` with MOE sugar chemistry.
+
+Use this file for:
+
+```text
+per-position chemistry embeddings
+CNN / Transformer / sequence model input
+position-specific feature extraction
+checking gap architecture
+reconstructing Chemical_Pattern
+visualizing ASO architecture
+```
+
+In short: **one row = one nucleotide position in one ASO**.
+
+---
+
+## `SOD1_linkage_level_annotations_v1.csv`
+
+This is the **internucleotide-linkage-level table**.
+
+Each row represents **one linkage between adjacent nucleotides**.
+
+For an ASO of length 17, there are 16 internucleotide linkages, so that ASO contributes 16 rows to this file.
+
+Typical columns are:
+
+```text
+row_id
+ISIS
+linkage_position_1based
+between_nt_1based
+linkage
+is_PS
+is_PO
+is_unknown_linkage
+```
+
+Example interpretation:
+
+```text
+ISIS = 666867
+linkage_position_1based = 1
+between_nt_1based = 1-2
+linkage = PS
+```
+
+This means: the linkage between nucleotide 1 and nucleotide 2 is phosphorothioate.
+
+Use this file for:
+
+```text
+PS/PO positional analysis
+linkage-level feature extraction
+checking whether Linkage_Location was parsed correctly
+building molecular or graph representations
+adding linkage embeddings to sequence models
+```
+
+In short: **one row = one bond/linkage between two adjacent nucleotides**.
+
+---
+
+## `SOD1_process_v1_data_dictionary.csv`
+
+This is the **metadata file describing `SOD1_process_v1.csv`**.
+
+Each row represents **one column** in the processed main dataset.
+
+Typical columns are:
+
+```text
+column
+dtype
+n_missing
+n_unique
+```
+
+Example interpretation:
+
+```text
+column = frac_MOE
+dtype = float64
+n_missing = 0
+n_unique = 12
+```
+
+This means: the `frac_MOE` column is numeric, has no missing values, and contains 12 unique values.
+
+Use this file for:
+
+```text
+quick dataset inspection
+checking column types
+checking missingness
+documenting preprocessing
+tracking feature availability
+debugging downstream modeling errors
+```
+
+In short: **one row = one column description from the main processed dataset**.
+
+---
+
+## How they relate to each other
+
+They are connected by `row_id` and `ISIS`.
+
+```text
+SOD1_process_v1.csv
+one row per ASO
+        |
+        | row_id / ISIS
+        |
+        ├── SOD1_position_level_annotations_v1.csv
+        |   many rows per ASO, one per nucleotide
+        |
+        └── SOD1_linkage_level_annotations_v1.csv
+            many rows per ASO, one per internucleotide linkage
+```
+
+For an ASO of length `n`:
+
+```text
+SOD1_process_v1.csv:                    1 row
+SOD1_position_level_annotations_v1.csv: n rows
+SOD1_linkage_level_annotations_v1.csv:  n - 1 rows
+```
+
+So, for a 17-mer ASO:
+
+```text
+main processed file: 1 row
+position annotation file: 17 rows
+linkage annotation file: 16 rows
+```
+
+## Practical recommendation
+
+Use:
+
+```text
+SOD1_process_v1.csv
+```
+
+as your main modeling table.
+
+Keep:
+
+```text
+SOD1_position_level_annotations_v1.csv
+SOD1_linkage_level_annotations_v1.csv
+```
+
+for positional, graph, or deep-learning models.
+
+Keep:
+
+```text
+SOD1_process_v1_data_dictionary.csv
+```
+
+for documentation and QC.

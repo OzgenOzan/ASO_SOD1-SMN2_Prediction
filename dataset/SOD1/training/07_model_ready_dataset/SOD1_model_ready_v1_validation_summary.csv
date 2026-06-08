@@ -1,0 +1,14 @@
+check,passed
+lengths_match_all_true,True
+valid_sequence_all_true,True
+valid_chemical_pattern_all_true,True
+linkage_count_valid_all_true,True
+chem_count_sum_valid_all_true,True
+base_count_sum_valid_all_true,True
+gap_length_valid_all_true,True
+gap_3mer_count_valid_all_true,True
+inhibition_groups_present,True
+no_sequence_leakage_train_test_2way,True
+all_rdkit_smiles_valid_or_na,True
+transcript_mapping_column_present,True
+at_least_one_transcript_match,True

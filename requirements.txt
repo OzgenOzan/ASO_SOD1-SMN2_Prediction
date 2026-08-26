@@ -1,0 +1,18 @@
+# Reconstructed dependency pins for the SOD1 dataset-preparation pipeline.
+# NOTE: these versions were not recorded by the original author; they were
+# reconstructed during a repository audit (2026) and chosen as recent stable
+# releases known to work together. Adjust if you know the original versions.
+numpy==2.2.5
+pandas==2.3.2
+scikit-learn==1.7.2
+
+# Optional pipeline features (Tm features / transcript fetch / RDKit descriptors).
+# If these are missing, the corresponding feature columns are filled with NA.
+biopython==1.85
+rdkit==2025.3.3
+
+# Notebook-only dependency (NCBI API key loading in notebook 04)
+python-dotenv==1.1.0
+
+# Tests
+pytest==9.1.1

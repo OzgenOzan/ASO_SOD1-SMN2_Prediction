@@ -8,6 +8,8 @@ project-relative paths.
 from __future__ import annotations
 
 import re
+import warnings
+from collections.abc import Iterable
 from itertools import product
 from pathlib import Path
 
@@ -282,6 +284,18 @@ def add_inhibition_groups_and_splits(
         labels=["low", "mid_low", "mid_high", "high"],
     )
 
+    # ---------------------------------------------------------------------
+    # Leakage limitation (audit finding ASO2-2):
+    # The split below groups rows by the EXACT `Sequence` string only. This
+    # guarantees identical sequences never straddle the train/test split,
+    # but near-identical ASOs targeting overlapping transcript windows
+    # (e.g. shifted by 1-2 nt) can still land on opposite sides of the
+    # split, so held-out metrics may be optimistically biased.
+    # TODO(remediation): replace exact-sequence grouping with similarity- or
+    # homology-clustered groups (e.g. transcript-window overlap clusters).
+    # That changes scientific behavior and requires owner sign-off; do not
+    # change the splitting algorithm here without it.
+    # ---------------------------------------------------------------------
     sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
     train_index, test_index = next(
         sgkf.split(
@@ -519,9 +533,9 @@ def add_rdkit_features(df: pd.DataFrame) -> pd.DataFrame:
             "rdkit_num_atoms": mol.GetNumAtoms(),
             "rdkit_num_bonds": mol.GetNumBonds(),
             "rdkit_num_rings": rdMolDescriptors.CalcNumRings(mol),
-            "rdkit_tpsa": rdMolDescriptors.CalcTPSA(mol),
-            "rdkit_num_h_donors": rdMolDescriptors.CalcNumHBD(mol),
-            "rdkit_num_h_acceptors": rdMolDescriptors.CalcNumHBA(mol),
+            "rdkit_tpsa": Descriptors.CalcTPSA(mol),
+            "rdkit_num_h_donors": Descriptors.CalcNumHBD(mol),
+            "rdkit_num_h_acceptors": Descriptors.CalcNumHBA(mol),
             "rdkit_formal_charge": Chem.GetFormalCharge(mol),
         }
 
@@ -567,9 +581,86 @@ def write_data_dictionary(df: pd.DataFrame, output_csv: Path) -> None:
     dictionary.to_csv(output_csv, index=False)
 
 
+# Default location of the external/held-out validation compounds used by the
+# train/validation disjointness guard (audit finding ASO2-1).
+SOD1_VALIDATION_SMILES_CSV = paths.SOD1_VALIDATION_DIR / "SOD1_validation_dataset_smiles.csv"
+
+
+def load_validation_identifiers(
+    validation_csv: Path | None = None,
+) -> tuple[list[str] | None, list[str] | None]:
+    """Load validation compound identifiers (ISIS IDs and exact sequences).
+
+    Returns ``(validation_ids, validation_sequences)``. If the validation CSV is
+    absent, returns ``(None, None)`` and emits a warning so the overlap guard is
+    explicitly skipped rather than silently passing. The ID list is injectable:
+    pass ``validation_csv`` to check against a different validation table.
+    """
+
+    csv_path = Path(validation_csv) if validation_csv is not None else SOD1_VALIDATION_SMILES_CSV
+    if not csv_path.exists():
+        warnings.warn(
+            f"Validation CSV not found at {csv_path}; "
+            "skipping train/validation overlap check (audit finding ASO2-1).",
+            stacklevel=2,
+        )
+        return None, None
+
+    validation = pd.read_csv(csv_path)
+    validation.columns = validation.columns.str.strip()
+
+    ids: list[str] | None = None
+    if "ISIS" in validation.columns:
+        ids = validation["ISIS"].dropna().astype(str).str.strip().tolist()
+
+    sequences: list[str] | None = None
+    if "Sequence" in validation.columns:
+        sequences = validation["Sequence"].dropna().astype(str).str.upper().str.strip().tolist()
+
+    return ids, sequences
+
+
+def validate_no_validation_overlap(
+    df: pd.DataFrame,
+    validation_ids: Iterable[str] | None = None,
+    validation_sequences: Iterable[str] | None = None,
+) -> None:
+    """Raise ValueError if any validation compound appears in ``df``.
+
+    Audit finding ASO2-1: the committed validation set overlaps the training
+    data. The exported model-ready table must be disjoint from the validation
+    set on both compound ID (`ISIS`) and exact `Sequence`. Either identifier
+    list may be ``None`` (check skipped for that identifier).
+    """
+
+    problems: list[str] = []
+
+    if validation_ids is not None and "ISIS" in df.columns:
+        training_ids = set(df["ISIS"].astype(str).str.strip())
+        id_overlap = training_ids.intersection(str(value).strip() for value in validation_ids)
+        if id_overlap:
+            problems.append(f"compound IDs (ISIS): {sorted(id_overlap)}")
+
+    if validation_sequences is not None and "Sequence" in df.columns:
+        training_sequences = set(df["Sequence"].astype(str).str.upper().str.strip())
+        sequence_overlap = training_sequences.intersection(
+            str(value).upper().strip() for value in validation_sequences
+        )
+        if sequence_overlap:
+            problems.append(f"exact sequences: {sorted(sequence_overlap)}")
+
+    if problems:
+        raise ValueError(
+            "Validation/training overlap detected (audit finding ASO2-1); the "
+            "exported table must be disjoint from the validation set. "
+            "Overlapping " + "; ".join(problems)
+        )
+
+
 def export_model_ready(
     input_csv: Path = paths.SOD1_FEATURE_DIR / "SOD1_process_v4f_rdkit_features.csv",
     output_dir: Path = paths.SOD1_MODEL_READY_DIR,
+    validation_csv: Path | None = None,
 ) -> pd.DataFrame:
     """Validate and export the final model-ready SOD1 feature table."""
 
@@ -595,6 +686,13 @@ def export_model_ready(
         train_sequences = set(df.loc[df["split_2way"] == "train", "Sequence"])
         test_sequences = set(df.loc[df["split_2way"] == "test", "Sequence"])
         checks["no_sequence_leakage_train_test_2way"] = not train_sequences.intersection(test_sequences)
+
+    # Hard guard for audit finding ASO2-1: the exported model-ready table must
+    # not contain any compound (by ISIS ID or exact sequence) that is present
+    # in the validation set. Raises ValueError on overlap; skipped with a
+    # warning when the validation CSV is unavailable.
+    validation_ids, validation_sequences = load_validation_identifiers(validation_csv)
+    validate_no_validation_overlap(df, validation_ids, validation_sequences)
 
     validation_summary = pd.DataFrame({"check": list(checks), "passed": list(checks.values())})
     df.to_csv(output_dir / "SOD1_model_ready_v1.csv", index=False)
